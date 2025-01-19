@@ -29,8 +29,26 @@ type UTF16View* = object
 
 func newUtf16View*(
     data: seq[uint16] = @[], endianness: UTFEndianness
-): UTF16View {.inline.} =
+): UTF16View {.inline, raises: [].} =
   UTF16View(data: data, endianness: endianness)
+
+proc newUtf16View*(str: string): UTF16View {.raises: [].} =
+  let cstr = cstring(str)
+  var
+    view: UTF16View
+    data = cast[ptr UncheckedArray[uint16]](alloc(
+      utf16LengthFromUtf8(cstr, str.len.csize_t)
+    ))
+
+  let len = convertUtf8ToUtf16LittleEndian(cstr, str.len.csize_t, data)
+  view.data.setLenUninit(len) # Allocate `len` number of `uint16` spaces
+  for i in 0 ..< len:
+    when defined(danger):
+      copyMem(view.data[i].addr, data[i].addr, sizeof(uint16))
+    else:
+      view.data[i] = data[i]
+
+  move(view)
 
 func `==`*(a, b: UTF16View): bool {.inline, raises: [].} =
   ## Compare two views together
