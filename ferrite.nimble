@@ -5,6 +5,7 @@ author = "xTrayambak"
 description = "A collection of utilities that are useful for implementing web standards"
 license = "MIT"
 srcDir = "src"
+backend = "cpp"
 
 # Dependencies
 

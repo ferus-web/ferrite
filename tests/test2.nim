@@ -1,7 +1,7 @@
 import std/unittest
 import ferrite/utf8view
 
-var 
+var
   view1 = newUTF8View("Hello there!")
   view2 = newUTF8View(@[0x80'u8])
 
@@ -11,7 +11,7 @@ suite "UTF-8 View":
 
   test "validate (text)":
     check view1.valid() == true
-  
+
   test "contains (text)":
     check "Hello" in view1 == true
     check "!" in view1 == true
