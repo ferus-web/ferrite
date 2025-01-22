@@ -7,5 +7,5 @@ Its code is mostly based off of other projects, like the [Ladybird browser](http
 
 # Roadmap
 - UTF-16 View [X]
-- UTF-8 View [ ]
+- UTF-8 View [X]
 - UTF-32 View [ ]
