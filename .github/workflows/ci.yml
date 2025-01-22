@@ -1,6 +1,5 @@
-# Used for test262.fyi
 
-name: Build artifacts
+name: Run Test Suite
 on: push
 
 jobs:

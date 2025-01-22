@@ -13,3 +13,5 @@ requires "results >= 0.5.1"
 
 task fmt, "Format code":
   exec "nph src/ tests/"
+
+requires "simdutf >= 5.5.0"
