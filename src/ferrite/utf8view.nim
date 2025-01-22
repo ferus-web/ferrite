@@ -54,7 +54,7 @@ proc validate*(view: UTF8View): tuple[valid: bool, count: uint] {.inline.} =
 
   (valid: res.error == SimdutfError.Success, count: res.count)
 
-proc isValid*(view: UTF8View): bool {.inline.} =
+proc valid*(view: UTF8View): bool {.inline.} =
   validateUtf8(view.toString())
 
 func decodeLeadingByte*(value: uint8): tuple[byteLength: uint, codePointBits: uint32, isValid: bool] =
@@ -69,26 +69,26 @@ func decodeLeadingByte*(value: uint8): tuple[byteLength: uint, codePointBits: ui
   return (byteLength: default(uint), codePointBits: default(uint32), isValid: false)
 
 func len*(view: UTF8View): uint64 =
-  if likely(view.isValid):
+  if likely(view.valid):
     return countUtf8(view.toCstring(), view.data.len.csize_t)
   
   var length: uint64
   var i = 0'u
 
   while i < uint(view.data.len - 1):
-    let (byteLength, codePoint, isValid) = decodeLeadingByte(cast[uint8](view.data[i]))
+    let (byteLength, _, isValid) = decodeLeadingByte(cast[uint8](view.data[i]))
 
     i += (if isValid: byteLength else: 1)
     inc length
 
   length
 
+func empty*(view: UTF8View): bool =
+  view.data.len < 1
+
 func contains*(view: UTF8View, needle: uint32): bool {.inline.} =
   if view.empty:
     return false
-
-  if needle.len < 1:
-    return true
 
   for codePoint in view.data:
     if codePoint.uint32() == needle:
@@ -101,7 +101,7 @@ func contains*(view: UTF8View, needle: string): bool =
   if needle.len < 1:
     return true
 
-  if needle.len > view.len:
+  if needle.len.uint64 > view.len:
     return false
 
   for pos, codePoint in view.data:
