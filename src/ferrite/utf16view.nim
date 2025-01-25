@@ -37,7 +37,7 @@ proc newUtf16View*(str: string): UTF16View {.raises: [].} =
   var
     view: UTF16View
     data = cast[ptr UncheckedArray[uint16]](alloc(
-      utf16LengthFromUtf8(cstr, str.len.csize_t)
+      utf16LengthFromUtf8(cstr, str.len.csize_t) * uint(sizeof(uint16))
     ))
 
   let len = convertUtf8ToUtf16LittleEndian(cstr, str.len.csize_t, data)
@@ -47,6 +47,8 @@ proc newUtf16View*(str: string): UTF16View {.raises: [].} =
       copyMem(view.data[i].addr, data[i].addr, sizeof(uint16))
     else:
       view.data[i] = data[i]
+
+  dealloc(data)
 
   move(view)
 

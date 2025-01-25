@@ -1,6 +1,6 @@
 # Package
 
-version = "0.1.0"
+version = "0.1.1"
 author = "xTrayambak"
 description = "A collection of utilities that are useful for implementing web standards"
 license = "MIT"
