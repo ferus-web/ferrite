@@ -2,8 +2,11 @@ import std/[options, unicode]
 import ferrite/[unicode_shared, lowlevel]
 import pkg/[results, simdutf/bindings]
 
+type
+  char16_t* {.importcpp: "char16_t".} = object
+
 proc countUtf16*(
-  input: ptr UncheckedArray[uint16], length: csize_t
+  input: ptr UncheckedArray[char16_t], length: csize_t
 ): csize_t {.importcpp: "simdutf::count_utf16(@)", header: "<simdutf.h>".}
   # FIXME: the signature is wrong in the simdutf bindings
 
@@ -36,7 +39,7 @@ proc newUtf16View*(str: string): UTF16View {.raises: [].} =
   let cstr = cstring(str)
   var
     view: UTF16View
-    data = cast[ptr UncheckedArray[uint16]](alloc(
+    data = cast[ptr UncheckedArray[char16_t]](alloc(
       utf16LengthFromUtf8(cstr, str.len.csize_t) * uint(sizeof(uint16))
     ))
 
@@ -46,7 +49,7 @@ proc newUtf16View*(str: string): UTF16View {.raises: [].} =
     when defined(danger):
       copyMem(view.data[i].addr, data[i].addr, sizeof(uint16))
     else:
-      view.data[i] = data[i]
+      view.data[i] = cast[uint16](data[i])
 
   dealloc(data)
 
