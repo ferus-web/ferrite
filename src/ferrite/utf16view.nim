@@ -2,14 +2,6 @@ import std/[options, unicode]
 import ferrite/[unicode_shared, lowlevel]
 import pkg/[results, simdutf/bindings]
 
-type
-  char16_t* {.importcpp: "char16_t".} = object
-
-proc countUtf16*(
-  input: ptr UncheckedArray[char16_t], length: csize_t
-): csize_t {.importcpp: "simdutf::count_utf16(@)", header: "<simdutf.h>".}
-  # FIXME: the signature is wrong in the simdutf bindings
-
 const
   HighSurrogateMin*: uint16 = 0xD800
   HighSurrogateMax*: uint16 = 0xDBFF
@@ -18,22 +10,27 @@ const
   ReplacementCodePoint*: uint32 = 0xFFFD
   FirstSupplementaryPlaneCodePoint*: uint32 = 0x10000
 
-func isHighSurrogate*(codeUnit: uint16): bool =
+func isHighSurrogate*(codeUnit: uint16 | char16_t): bool =
   (codeUnit >= HighSurrogateMin) and (codeUnit <= HighSurrogateMax)
 
-func isLowSurrogate*(codeUnit: uint16): bool =
+func isLowSurrogate*(codeUnit: uint16 | char16_t): bool =
   (codeUnit >= LowSurrogateMin) and (codeUnit <= LowSurrogateMax)
 
 type UTF16View* = object
-  data: seq[uint16]
+  data: seq[char16_t]
   endianness: UTFEndianness
 
   cachedCpLength: Option[uint64]
 
 func newUtf16View*(
-    data: seq[uint16] = @[], endianness: UTFEndianness
+    data: seq[char16_t] = @[], endianness: UTFEndianness
 ): UTF16View {.inline, raises: [].} =
   UTF16View(data: data, endianness: endianness)
+
+func newUtf16View*(
+  data: seq[uint16] = @[], endianness: UTFEndianness
+): UTF16View {.inline, raises: [].} =
+  UTF16View(data: cast[seq[char16_t]](data), endianness: endianness)
 
 proc newUtf16View*(str: string): UTF16View {.raises: [].} =
   let cstr = cstring(str)
@@ -47,9 +44,9 @@ proc newUtf16View*(str: string): UTF16View {.raises: [].} =
   view.data.setLenUninit(len) # Allocate `len` number of `uint16` spaces
   for i in 0 ..< len:
     when defined(danger):
-      copyMem(view.data[i].addr, data[i].addr, sizeof(uint16))
+      copyMem(view.data[i].addr, data[i].addr, sizeof(char16_t))
     else:
-      view.data[i] = cast[uint16](data[i])
+      view.data[i] = cast[char16_t](data[i])
 
   dealloc(data)
 
@@ -59,19 +56,19 @@ func `==`*(a, b: UTF16View): bool {.inline, raises: [].} =
   ## Compare two views together
   a.data == b.data and a.endianness == b.endianness
 
-func start*(view: UTF16View): uint16 {.inline.} =
+func start*(view: UTF16View): char16_t {.inline.} =
   ## Get the initial codepoint for this view.
   view.data[0]
 
-func data*(view: UTF16View): seq[uint16] {.inline, raises: [].} =
+func data*(view: UTF16View): seq[char16_t] {.inline, raises: [].} =
   ## Get the raw UTF-16 codepoint data for this view.
   view.data
 
-iterator items*(view: UTF16View): lent uint16 =
+iterator items*(view: UTF16View): lent char16_t =
   for codepoint in view.data:
     yield codepoint
 
-func add*(view: var UTF16View, cp: uint16) {.inline, raises: [].} =
+func add*(view: var UTF16View, cp: char16_t) {.inline, raises: [].} =
   ## Append a codepoint to this view
   view.data &= cp
   view.cachedCpLength = none(uint64) # Reset the codepoint length cache
@@ -134,11 +131,11 @@ func codeunitLen*(view: UTF16View): uint64 {.inline, raises: [].} =
 
 func codeUnitAt*(
     view: UTF16View, index: SomeUnsignedInt
-): uint16 {.inline, raises: [].} =
+): char16_t {.inline, raises: [].} =
   ## Get the UTF-16 code unit at `index`
   view.data[index]
 
-func decodeSurrogatePair*(high, low: uint16): uint32 {.inline, raises: [ValueError].} =
+func decodeSurrogatePair*(high, low: char16_t): uint32 {.inline, raises: [ValueError].} =
   ## Decode a surrogate pair.
   ## `high` must be a high surrogate, and `low` must be a low surrogate.
   ## Otherwise, a `ValueError` will be raised if either of the conditions are not met.
@@ -148,7 +145,7 @@ func decodeSurrogatePair*(high, low: uint16): uint32 {.inline, raises: [ValueErr
   if not low.isLowSurrogate:
     raise newException(ValueError, $low & " is not a low surrogate")
 
-  ((high - HighSurrogateMin) shl 10) + (low - LowSurrogateMin) +
+  ((high - HighSurrogateMin).uint32 shl 10'u32) + (low - LowSurrogateMin).uint32 +
     FirstSupplementaryPlaneCodePoint
 
 func codePointAt*(
@@ -160,14 +157,14 @@ func codePointAt*(
 
   let codePoint = view.codeUnitAt(index)
   if not isHighSurrogate(codePoint) and not isLowSurrogate(codePoint):
-    return uint32(codePoint)
+    return uint32(cast[uint16](codePoint))
 
   if isLowSurrogate(codePoint) or (index + 1 == view.codeunitLen()):
-    return uint32(codePoint)
+    return uint32(cast[uint16](codePoint))
 
   let second = view.codeUnitAt(index + 1)
   if not isLowSurrogate(second):
-    return uint32(codePoint)
+    return uint32(cast[uint16](codePoint))
 
   return decodeSurrogatePair(codePoint, second)
 
@@ -209,4 +206,4 @@ proc startsWith*(view: UTF16View, needle: UTF16View): bool {.raises: [ValueError
 
   return true
 
-export unicode_shared
+export unicode_shared, char16_t, `==`

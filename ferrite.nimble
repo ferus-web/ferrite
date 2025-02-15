@@ -1,6 +1,6 @@
 # Package
 
-version = "0.1.2"
+version = "0.1.3"
 author = "xTrayambak"
 description = "A collection of utilities that are useful for implementing web standards"
 license = "MIT"
@@ -15,4 +15,4 @@ requires "results >= 0.5.1"
 task fmt, "Format code":
   exec "nph src/ tests/"
 
-requires "simdutf >= 5.5.0"
+requires "simdutf >= 6.1.1"
