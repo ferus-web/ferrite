@@ -1,3 +1,5 @@
+**WARNING**: This library has been deprecated. Please do not use it.
+
 # Ferrite
 Ferrite is a set of routines and utilities that are shared across the entire Ferus projectbase. \
 It implements things crucial to building web technologies in Nim.
